@@ -4,6 +4,7 @@
 # https://gist.github.com/davecgh/7bb5c995665787811dc6a6ddbb49688d
 
 set -e
+set -x
 
 SESSION="dcrd-minimal"
 NODES_ROOT=~/dcrdsimnetnodes
@@ -43,10 +44,8 @@ logdir = ./log
 appdata = ./data
 pass = 123
 enablevoting = 1
-enableticketbuyer = 1
-ticketbuyer.nospreadticketpurchases = 1
-ticketbuyer.maxperblock = 5
-; ticketbuyer.minfee = 0.002
+; enableticketbuyer = 1
+; purchaseaccount = ticketbuyer
 EOF
 
 cat > "${NODES_ROOT}/dcrdata.conf" <<EOF
@@ -64,7 +63,7 @@ tmux split-window -v
 tmux select-pane -t 0
 tmux send-keys "cd master" C-m
 tmux send-keys "dcrd -C ../dcrd.conf --listen 127.0.0.1:19555 --miningaddr=${WALLET_MINING_ADDR}" C-m
-tmux resize-pane -D 15
+tmux resize-pane -D 5
 tmux select-pane -t 1
 tmux send-keys "cd master" C-m
 
@@ -95,7 +94,7 @@ tmux send-keys "./ctl generate 32" C-m
 tmux new-window -t $SESSION:1 -n 'wallet'
 tmux split-window -v
 tmux select-pane -t 0
-tmux resize-pane -D 15
+tmux resize-pane -D 5
 tmux send-keys "cd wallet" C-m
 tmux send-keys "dcrwallet -C ../wallet.conf --create" C-m
 sleep 2
@@ -123,7 +122,14 @@ esac
 ./ctl purchaseticket default 999999 1 \`./ctl getnewaddress\` \$NUM
 EOF
 chmod +x "${NODES_ROOT}/wallet/tickets"
-tmux send-keys "./tickets 300"
+tmux send-keys "sleep 15" C-m
+tmux send-keys "./ctl createnewaccount ticketbuyer" C-m
+tmux send-keys "./ctl sendtoaddress \`./ctl getnewaddress ticketbuyer\` 1" C-m
+sleep 20
+tmux select-pane -t 0
+tmux send-keys C-c
+tmux send-keys "dcrwallet -C ../wallet.conf --purchaseaccount ticketbuyer --enableticketbuyer" C-m
+
 
 cat > "${NODES_ROOT}/wallet/xfer" <<EOF
 #!/bin/sh
@@ -132,4 +138,4 @@ EOF
 chmod +x "${NODES_ROOT}/wallet/xfer"
 
 
-tmux attach-session -t $SESSION
+#tmux attach-session -t $SESSION

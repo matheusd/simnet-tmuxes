@@ -27,7 +27,7 @@ simnet=1
 logdir=./log
 datadir=./data
 txindex=1
-debuglevel=TXMP=TRACE,MINR=TRACE,CHAN=TRACE
+debuglevel=MINR=TRACE
 EOF
 
 cat > "${NODES_ROOT}/dcrctl.conf" <<EOF
@@ -44,8 +44,9 @@ logdir = ./log
 appdata = ./data
 pass = 123
 enablevoting = 1
-; enableticketbuyer = 1
+enableticketbuyer = 1
 ; purchaseaccount = ticketbuyer
+ticketbuyer.limit = 5
 EOF
 
 cat > "${NODES_ROOT}/dcrdata.conf" <<EOF
@@ -88,7 +89,8 @@ done
 EOF
 chmod +x "${NODES_ROOT}/master/mine"
 sleep 3
-tmux send-keys "./ctl generate 32" C-m
+# tmux send-keys "./ctl generate 128" C-m
+tmux send-keys "./mine 32" C-m
 
 
 tmux new-window -t $SESSION:1 -n 'wallet'
@@ -122,13 +124,6 @@ esac
 ./ctl purchaseticket default 999999 1 \`./ctl getnewaddress\` \$NUM
 EOF
 chmod +x "${NODES_ROOT}/wallet/tickets"
-tmux send-keys "sleep 15" C-m
-tmux send-keys "./ctl createnewaccount ticketbuyer" C-m
-tmux send-keys "./ctl sendtoaddress \`./ctl getnewaddress ticketbuyer\` 1" C-m
-sleep 20
-tmux select-pane -t 0
-tmux send-keys C-c
-tmux send-keys "dcrwallet -C ../wallet.conf --purchaseaccount ticketbuyer --enableticketbuyer" C-m
 
 
 cat > "${NODES_ROOT}/wallet/xfer" <<EOF
@@ -138,4 +133,4 @@ EOF
 chmod +x "${NODES_ROOT}/wallet/xfer"
 
 
-#tmux attach-session -t $SESSION
+tmux attach-session -t $SESSION

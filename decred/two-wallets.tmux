@@ -85,10 +85,12 @@ walletrpcserver = 127.0.0.1:19102
 EOF
 
 
+# Use miningaddr from wallet01 so we don't fund wallet02 prematurely
 cp ${NODES_ROOT}/dcrd.conf ${NODES_ROOT}/beta
 cat >> ${NODES_ROOT}/beta/dcrd.conf <<EOF
 listen = 127.0.0.1:19200
 rpclisten = 127.0.0.1:19201
+miningaddr = ${WALLET01_MININGADDR}
 EOF
 cp ${NODES_ROOT}/dcrctl.conf ${NODES_ROOT}/beta
 cat >> ${NODES_ROOT}/beta/dcrctl.conf <<EOF
@@ -177,7 +179,7 @@ tmux send-keys "dcrd -C ./dcrd.conf" C-m
 tmux select-pane -t 1
 tmux send-keys "cd alpha" C-m
 sleep 3
-tmux send-keys "./ctl generate 16" C-m
+tmux send-keys "./ctl generate 32" C-m
 
 tmux select-pane -t 2
 tmux send-keys "cd w-alpha" C-m
@@ -187,7 +189,7 @@ tmux send-keys "123" C-m "123" C-m "n" C-m "y" C-m
 sleep 1
 tmux send-keys "${WALLET01_SEED}" C-m C-m
 tmux send-keys "dcrwallet -C ../wallet.conf --rpcconnect 127.0.0.1:19101 \
---rpclisten 127.0.0.1:19102 --enablevoting --enableticketbuyer --ticketbuyer.maxperblock=5" C-m
+--rpclisten 127.0.0.1:19102" C-m
 tmux select-pane -t 3
 tmux send-keys "cd w-alpha" C-m
 
@@ -218,7 +220,16 @@ tmux send-keys "dcrwallet -C ../wallet.conf --rpcconnect 127.0.0.1:19201 \
 tmux select-pane -t 1
 tmux send-keys "cd w-beta" C-m
 
-
+# Voting Account & Ticket Buyer in Alpha Wallet
+tmux select-window -t $SESSION:1
+tmux send-keys "sleep 15" C-m
+tmux send-keys "./ctl createnewaccount ticketbuyer" C-m
+tmux send-keys "./ctl sendtoaddress \`./ctl getnewaddress ticketbuyer\` 0.1" C-m
+sleep 20
+tmux select-pane -t 2
+tmux send-keys C-c
+tmux send-keys "dcrwallet -C ../wallet.conf --rpcconnect 127.0.0.1:19101 \
+--rpclisten 127.0.0.1:19102 --enableticketbuyer --enablevoting --ticketbuyer.limit 5" C-m
 
 
 tmux attach-session -t $SESSION
